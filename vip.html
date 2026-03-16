@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>VIP Info</title>
+    <link rel="stylesheet" href="styles.css">
+    
+</head>
+<body>
+<header>
+    <div class="header-inner">
+<h1>VIP Info</h1>
+    <nav>
+        <ul>
+            <li><a href="index_user.html">Home</a></li>
+            <li><a href="service.html">Service</a></li>
+            <li><a href="hairdressers.html">Hairdressers</a></li>
+            <li><a href="reservation.html">Reservation</a></li>
+            <li><a href="vip.html">VIP Info</a></li>
+            <li><a href="index.html">Logout</a></li>
+        </ul>
+    </nav>
+    </div>
+</header>
+
+<div class="container">
+    <h2>VIP Privileges</h2>
+    <ul>
+        <li>VIP customers can make service reservations 15 days in advance.</li>
+        <li>Enjoy different discounts based on VIP levels (up to 25% off).</li>
+    </ul>
+
+    <h3>Your current VIP status</h3>
+    <p><strong>Total Spent:</strong> <span id="totalSpent">Loading...</span></p>
+    <p><strong>VIP Level:</strong> <span id="vipLevel">Loading...</span></p>
+    <p><strong>Current discount：</strong><span id="vipDiscount">Loading...</span></p>
+
+    <h3>Upgrade Rules</h3>
+    <ul>
+        <li>For every consumption of at least <strong>1000 元</strong> Level up by 1.</li>
+        <li>highest <strong>VIP5 level</strong>。</li>
+        <li>Each time you level up, you get an additional increase of<strong>5%</strong> Discounts (VIP1: 5% off, VIP5: 25% off).</li>
+        <li>There is no need to apply manually or enter the card number; the system will automatically update the level based on the accumulated consumption.</li>
+    </ul>
+</div>
+
+
+<script>
+function loadVIPInfo() {
+    fetch("check_level.php")
+        .then(res => res.text())
+        .then(text => {
+            console.log("VIP RAW:", text);
+            const data = JSON.parse(text);
+
+            if (!data.success) {
+                alert("Failed to load VIP information.");
+                return;
+            }
+
+            document.getElementById("vipLevel").textContent = data.level;
+            document.getElementById("totalSpent").textContent = data.totalSpent;
+
+            // compute discount
+            let discountPercent = data.level * 5;
+            let discountText = discountPercent > 0
+                ? discountPercent + "% off"
+                : "No discount";
+
+            document.getElementById("vipDiscount").textContent = discountText;
+        })
+        .catch(err => console.log("VIP JSON ERROR:", err));
+}
+
+window.onload = function() {
+    loadVIPInfo();
+};
+</script>
+
+</body>
+</html>

@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>Admin Home</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+
+<body>
+<header>
+    <div class="header-inner">
+        <h1>Beauty Salon - Admin Panel</h1>
+        <nav>
+            <ul>
+                <li><a href="admin_home.html">Home</a></li>
+                <li><a href="#" id="logoutBtn">Logout</a></li>
+            </ul>
+        </nav>
+    </div>
+</header>
+
+<div class="container card-glass">
+
+    <!-- Welcome message at the top -->
+    <h2>Welcome, <span id="adminNameTop">Loading...</span></h2>
+
+    <div class="info-card">
+        <h2>Administrator Information</h2>
+        <p><strong>Administrator Name：</strong> <span id="adminNameInfo">Loading...</span></p>
+        <p><strong>Administrator ID：</strong> <span id="adminId">Loading...</span></p>
+    </div>
+
+    <p>
+        You have logged into the backend management system, where you can manage orders, inventory, service items, hairstylists, etc.
+    </p>
+
+    <h3>List of Administrator Functions</h3>
+
+    <ul>
+        <li><a href="admin_reservation.html" class="btn-primary">Manage user orders</a></li>
+        <!--<li><a href="warehouse_inventory.html" class="btn-primary">Warehouse Product Management</a></li>-->
+        <li><a href="admin_hairdressers.html" class="btn-primary">Hairdresser Management</a></li>
+        <li><a href="admin_services.html" class="btn-primary">Service Management</a></li>
+        <li><a href="admin_vip.html" class="btn-primary">VIP consumption statistics</a></li>
+        <li><a href="admin_hairdresser_rating.html" class="btn-primary">Barber Ratings and Performance</a></li>
+    </ul>
+</div>
+
+<script>
+
+// ========================
+// Logout
+// ========================
+document.getElementById("logoutBtn").addEventListener("click", function () {
+    fetch("admin_logout.php")
+        .then(() => {
+            alert("Logged out");
+            window.location = "admin_login.html";
+        });
+});
+
+function loadAdminInfo() {
+    fetch("admin_me.php")
+        .then(res => res.text())
+        .then(text => {
+            console.log("ADMIN ME RAW:", text);
+            const data = JSON.parse(text);
+
+            if (!data.success) return;
+
+            document.getElementById("adminNameTop").textContent  = data.admin.name;
+            document.getElementById("adminNameInfo").textContent = data.admin.name;
+            document.getElementById("adminId").textContent       = data.admin.id;
+        })
+        .catch(err => console.log("ADMIN ME ERROR:", err));
+}
+
+window.onload = function () {
+    loadAdminInfo();
+};
+</script>
+
+
+
+</body>
+</html>

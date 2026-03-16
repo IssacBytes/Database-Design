@@ -1,0 +1,164 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>Admin - Hairdresser Overview</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+<header>
+    <div class="header-inner">
+        <h1>Hairdresser Rating & Performance</h1>
+    </div>
+    <div class="header-inner">
+        <nav>
+            <ul>
+                <li><a href="admin_home.html">Home</a></li>
+                <li><a href="#" id="logoutBtn">Logout</a></li>
+            </ul>
+        </nav>
+    </div>
+</header>
+
+<div class="container">
+
+    <!-- Rating Block -->
+    <h2>Hairdresser Rating</h2>
+    <table>
+        <tr>
+            <th>Name</th>
+            <th>Rating</th>
+        </tr>
+        <tbody id="ratingBody">
+            <tr><td colspan="2">Loading...</td></tr>
+        </tbody>
+    </table>
+
+    <br>
+
+    <!-- Performance Block -->
+    <h2>Hairdresser Performance</h2>
+    <table>
+        <tr>
+            <th>Name</th>
+            <th>Reservation Count</th>
+            <th>Total Income</th>
+        </tr>
+        <tbody id="performanceBody">
+            <tr><td colspan="3">Loading...</td></tr>
+        </tbody>
+    </table>
+
+</div>
+
+<script>
+// ========================
+// Logout
+// ========================
+document.getElementById("logoutBtn").addEventListener("click", function () {
+    fetch("admin_logout.php")
+        .then(() => {
+            alert("Logged out");
+            window.location = "admin_login.html";
+        });
+});
+
+// ========================
+// Load Hairdresser Rating
+// ========================
+function loadRating() {
+    fetch("admin_get_hairdresser_rating.php")
+        .then(res => res.text())
+        .then(text => {
+            console.log("RATING RAW:", text);
+
+            const data = JSON.parse(text);
+            const body = document.getElementById("ratingBody");
+
+            if (!data.success) {
+                body.innerHTML =
+                    "<tr><td colspan='2'>Failed to load rating</td></tr>";
+                return;
+            }
+
+            body.innerHTML = "";
+
+            if (!data.hairdressers || data.hairdressers.length === 0) {
+                body.innerHTML =
+                    "<tr><td colspan='2'>No data</td></tr>";
+                return;
+            }
+
+            data.hairdressers.forEach(h => {
+                const tr = document.createElement("tr");
+                tr.innerHTML = `
+                    <td>${h.name}</td>
+                    <td>${h.rating !== null ? h.rating : "N/A"}</td>
+                `;
+                body.appendChild(tr);
+            });
+        })
+        .catch(err => {
+            console.log("RATING JSON ERROR:", err);
+            document.getElementById("ratingBody").innerHTML =
+                "<tr><td colspan='2'>Error loading rating</td></tr>";
+        });
+}
+
+
+// ========================
+// Load Hairdresser Performance
+// ========================
+function loadPerformance() {
+    fetch("admin_get_hairdresser_performance.php")
+        .then(res => res.text())
+        .then(text => {
+            console.log("PERFORMANCE RAW:", text);
+            const data = JSON.parse(text);
+            return data;
+        })
+        .then(data => {
+            if (!data.success) {
+                document.getElementById("performanceBody").innerHTML =
+                    "<tr><td colspan='3'>Failed to load performance</td></tr>";
+                return;
+            }
+
+            const body = document.getElementById("performanceBody");
+            body.innerHTML = "";
+
+            if (data.list.length === 0) {
+                body.innerHTML =
+                    "<tr><td colspan='3'>No data</td></tr>";
+                return;
+            }
+
+            data.list.forEach(h => {
+                const tr = document.createElement("tr");
+                tr.innerHTML = `
+                    <td>${h.name}</td>
+                    <td>${h.reservationCount}</td>
+                    <td>${Number(h.totalIncome).toFixed(2)}</td>
+                `;
+                body.appendChild(tr);
+            });
+        })
+        .catch(err => {
+            console.log("PERFORMANCE ERROR:", err);
+        });
+}
+
+// ========================
+// Init
+// ========================
+window.onload = function () {
+    loadRating();
+    loadPerformance();
+};
+</script>
+
+
+
+</body>
+</html>

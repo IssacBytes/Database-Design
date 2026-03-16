@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>Hairdresser Profile</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+<header>
+    <div class="header-inner">
+        <h1>Hairdresser Profile</h1>
+        <nav>
+            <ul>
+                <li><a href="hairdressers_guest.html">Back</a></li>
+            </ul>
+        </nav>
+    </div>
+</header>
+
+<div class="container card-glass">
+    <h2 id="name">--</h2>
+    <p id="intro">Loading...</p>
+    <p><strong>Specialty:</strong> <span id="specialty">--</span></p>
+    <p><strong>Rating:</strong> <span id="rating">--</span></p>
+    <p><strong>Contact:</strong> <span id="email">--</span></p>
+    <p style="margin-top:16px;"><a id="toHdHome" class="btn btn-primary" href="#">Visit Home</a></p>
+</div>
+
+<script>
+    const profiles = {
+        'H001': { name: 'Amy', intro: '擅长头部按摩、护理与自然造型，注重客人放松体验。', specialty: 'Massage & Care', rating: '4.8', email: 'amy@salon.com' },
+        'H002': { name: 'Ben', intro: '专注男士与女士精剪，线条干净利落，擅长短发设计。', specialty: 'Haircut', rating: '4.5', email: 'ben@salon.com' },
+        'H003': { name: 'Cindy', intro: '擅长染发与色彩搭配，熟练处理各种色彩效果与护理。', specialty: 'Hair Color', rating: '4.7', email: 'cindy@salon.com' }
+    };
+    function getParams() { const u = new URL(window.location.href); return Object.fromEntries(u.searchParams.entries()); }
+    window.onload = function() {
+        const p = getParams();
+        const id = p.id || '';
+        const info = profiles[id] || { name: 'Unknown', intro: 'No info', specialty: '-', rating: '-', email: '-' };
+        document.getElementById('name').textContent = info.name + ' (' + id + ')';
+        document.getElementById('intro').textContent = info.intro;
+        document.getElementById('specialty').textContent = info.specialty;
+        document.getElementById('rating').textContent = info.rating;
+        document.getElementById('email').textContent = info.email;
+        // link to hairdresser home (demo)
+        document.getElementById('toHdHome').href = 'hairdresser_home.html?id=' + encodeURIComponent(id);
+    };
+</script>
+</body>
+</html>

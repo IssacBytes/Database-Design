@@ -1,0 +1,183 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>Admin - Service Management</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+<header>
+    <div class="header-inner">
+        <h1>Admin Panel - Seivices Management</h1>
+        <nav>
+            <ul>
+                <li><a href="admin_home.html">Home</a></li>
+                <li><a href="#" id="logoutBtn">Logout</a></li>
+            </ul>
+        </nav>
+    </div>
+</header>
+
+<div class="container">
+
+    <h2>All Services</h2>
+
+    <table id="serviceTable">
+        <thead>
+            <tr>
+                <th>ID</th>
+                <th>Name</th>
+                <th>Base Price</th>
+                <th>Duration (mins)</th>
+                <th>Status</th>
+                <th>Action</th>
+            </tr>
+        </thead>
+        <tbody>
+            <!-- JS Dynamic filling -->
+        </tbody>
+    </table>
+
+    <hr>
+
+    <h2>Add New Service</h2>
+
+    <div class="form-box">
+        <label>Service Name:</label>
+        <input type="text" id="newName">
+
+        <label>Description:</label>
+        <textarea id="newDesc"></textarea>
+
+        <label>Base Price:</label>
+        <input type="number" id="newPrice" step="0.01">
+
+        <label>Duration (mins):</label>
+        <input type="number" id="newDuration">
+
+        <button onclick="createService()">Create Service</button>
+    </div>
+
+</div>
+
+<script>
+
+/* =====================
+   Load Services
+===================== */
+function loadServices() {
+    fetch("admin_get_services.php")
+    .then(res => res.text())
+    .then(text => {
+        console.log("SERVICES RAW:", text);
+        const data = JSON.parse(text);
+
+        if (!data.success) {
+            alert("Failed to load services");
+            return;
+        }
+
+        const tbody = document.querySelector("#serviceTable tbody");
+        tbody.innerHTML = "";
+
+        data.services.forEach(s => {
+            const tr = document.createElement("tr");
+
+            tr.innerHTML = `
+                <td>${s.id}</td>
+                <td>${s.name}</td>
+                <td>${s.basePrice}</td>
+                <td>${s.durationMins}</td>
+                <td>${s.status}</td>
+                <td>
+                    <button onclick="toggleService('${s.id}')">
+                        ${s.status === "active" ? "Disable" : "Enable"}
+                    </button>
+                </td>
+            `;
+
+            tbody.appendChild(tr);
+        });
+    });
+}
+
+/* =====================
+   Create Service
+===================== */
+function createService() {
+    const name = document.getElementById("newName").value.trim();
+    const desc = document.getElementById("newDesc").value.trim();
+    const price = document.getElementById("newPrice").value;
+    const duration = document.getElementById("newDuration").value;
+
+    if (!name || price <= 0 || duration <= 0) {
+        alert("Invalid input");
+        return;
+    }
+
+    // ✅ Use FormData (consistent with the client side)
+    const form = new FormData();
+    form.append("name", name);
+    form.append("description", desc);
+    form.append("basePrice", price);
+    form.append("durationMins", duration);
+
+    fetch("admin_create_service.php", {
+        method: "POST",
+        body: form
+    })
+    .then(res => res.text())
+    .then(text => {
+        console.log("CREATE RAW:", text);
+        const data = JSON.parse(text);
+
+        if (!data.success) {
+            alert("Create failed: " + (data.error || ""));
+            return;
+        }
+
+        // Clear the form
+        document.getElementById("newName").value = "";
+        document.getElementById("newDesc").value = "";
+        document.getElementById("newPrice").value = "";
+        document.getElementById("newDuration").value = "";
+
+        loadServices();
+    })
+    .catch(err => {
+        console.log("CREATE JSON ERROR:", err);
+        alert("Create failed (JSON error)");
+    });
+}
+
+
+/* =====================
+   Toggle Service Status
+===================== */
+function toggleService(id) {
+    fetch("admin_toggle_service.php", {
+        method: "POST",
+        headers: {
+            "Content-Type": "application/x-www-form-urlencoded"
+        },
+        body: "id=" + encodeURIComponent(id)
+    })
+    .then(res => res.json())
+    .then(data => {
+        if (!data.success) {
+            alert("Toggle failed");
+            return;
+        }
+        loadServices();
+    });
+}
+
+/* =====================
+   Init
+===================== */
+window.onload = loadServices();
+</script>
+
+</body>
+</html>

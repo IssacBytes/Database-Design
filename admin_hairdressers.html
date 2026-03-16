@@ -1,0 +1,273 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>Admin - Manage Hairdressers</title>
+    <link rel="stylesheet" href="styles.css">
+
+    <style>
+        .admin-panel {
+            max-width: 1200px;
+            margin: 20px auto;
+        }
+
+        .table-wrapper {
+            max-height: 500px;
+            overflow-y: auto;
+            border: 1px solid #ddd;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        thead th {
+            position: sticky;
+            top: 0;
+            background: #f0f0f0;
+            z-index: 10;
+        }
+
+        th, td {
+            padding: 12px;
+            border: 1px solid #ddd;
+            text-align: left;
+        }
+
+        .btn-primary {
+            padding: 6px 12px;
+            background-color: #007bff;
+            color: #fff;
+            border: none;
+            cursor: pointer;
+            border-radius: 4px;
+            margin-right: 6px;
+        }
+
+        .btn-danger {
+            padding: 6px 12px;
+            background-color: #dc3545;
+            color: #fff;
+            border: none;
+            cursor: pointer;
+            border-radius: 4px;
+            margin-right: 6px;
+        }
+
+        .btn-secondary {
+            padding: 6px 12px;
+            background-color: #6c757d;
+            color: #fff;
+            border: none;
+            cursor: pointer;
+            border-radius: 4px;
+        }
+
+        .status-active {
+            color: green;
+            font-weight: bold;
+        }
+
+        .status-disabled {
+            color: gray;
+            font-weight: bold;
+        }
+    </style>
+</head>
+
+<body>
+
+<header>
+    <div class="header-inner">
+        <h1>Admin Panel - Hairdresser Management</h1>
+        <nav>
+            <ul>
+                <li><a href="admin_home.html">Back to Admin Home</a></li>
+                <li><a href="#" id="logoutBtn">Logout</a></li>
+            </ul>
+        </nav>
+    </div>
+</header>
+
+<div class="container admin-panel card-glass">
+
+    <h2>Barber management</h2>
+
+    <div class="table-wrapper">
+        <table>
+            <thead>
+                <tr>
+                    <th>Barber ID</th>
+                    <th>Name</th>
+                    <th>expertise</th>
+                    <th>Score</th>
+                    <th>status</th>
+                    <th>Working hours</th>
+                    <th>operation</th>
+                </tr>
+            </thead>
+            <tbody id="hairdresserBody">
+                <!-- JS Dynamic filling -->
+            </tbody>
+        </table>
+    </div>
+
+</div>
+
+<script>
+
+/* =====================
+   Load Hairdressers
+===================== */
+function loadHairdressers() {
+    fetch("admin_get_hairdressers.php")
+        .then(res => res.text())
+        .then(text => {
+            console.log("HAIRDRESSER RAW:", text);
+            const data = JSON.parse(text);
+
+            if (!data.success) {
+                alert("Failed to load the hairdresser");
+                return;
+            }
+
+            renderHairdressers(data.hairdressers);
+        })
+        .catch(err => {
+            console.log("LOAD ERROR:", err);
+            alert("Failed to load the hairdresser data");
+        });
+}
+
+/* =====================
+   Render Table
+===================== */
+function renderHairdressers(list) {
+    const body = document.getElementById("hairdresserBody");
+    body.innerHTML = "";
+
+    if (!list || list.length === 0) {
+        body.innerHTML = `
+            <tr>
+                <td colspan="7" style="text-align:center;color:#777;">
+                    No barber data available
+                </td>
+            </tr>`;
+        return;
+    }
+
+    list.forEach(hd => {
+        const status = hd.status || "active";
+        const statusHtml = status === "active"
+            ? '<span class="status-active">Active</span>'
+            : '<span class="status-disabled">Disabled</span>';
+
+        const toggleBtn = status === "active"
+            ? `<button class="btn-danger" onclick="toggleHairdresser('${hd.id}','disabled')">Disable</button>`
+            : `<button class="btn-primary" onclick="toggleHairdresser('${hd.id}','active')">Enable</button>`;
+
+        const tr = document.createElement("tr");
+        tr.innerHTML = `
+            <td>${hd.id}</td>
+            <td>${hd.name}</td>
+            <td>${hd.specialty || "-"}</td>
+            <td>${hd.rating || "-"}</td>
+            <td>${statusHtml}</td>
+            <td>
+                <button class="btn-secondary" onclick="viewSchedule('${hd.id}')">
+                    Check the schedule
+                </button>
+            </td>
+            <td>
+                ${toggleBtn}
+            </td>
+        `;
+        body.appendChild(tr);
+    });
+}
+
+/* =====================
+   View Schedule
+===================== */
+function viewSchedule(hairdresserId) {
+    fetch("admin_get_hairdresser_schedule.php?hairdresserId=" + hairdresserId)
+        .then(res => res.text())
+        .then(text => {
+            console.log("SCHEDULE RAW:", text);
+            const data = JSON.parse(text);
+
+            if (!data.success) {
+                alert("Failed to load the schedule");
+                return;
+            }
+
+            if (data.schedule.length === 0) {
+                alert("The hairdresser has no work schedule yet.");
+                return;
+            }
+
+            let msg = "Work schedule：\n\n";
+            data.schedule.forEach(s => {
+                msg += `${s.weekday}  ${s.work_time}\n`;
+            });
+
+            alert(msg);
+        })
+        .catch(err => {
+            console.log("SCHEDULE ERROR:", err);
+            alert("Scheduling loading error");
+        });
+}
+
+/* =====================
+   Toggle Status
+===================== */
+function toggleHairdresser(id, status) {
+    if (!confirm("Confirm the modification of the hairdresser's status？")) return;
+
+    const form = new FormData();
+    form.append("id", id);
+    form.append("status", status);
+
+    fetch("admin_toggle_hairdresser.php", {
+        method: "POST",
+        body: form
+    })
+    .then(res => res.text())
+    .then(text => {
+        console.log("TOGGLE RAW:", text);
+        const data = JSON.parse(text);
+        if (!data.success) {
+            alert("Operation failed：" + data.error);
+            return;
+        }
+        loadHairdressers();
+    })
+    .catch(err => {
+        console.log("TOGGLE ERROR:", err);
+        alert("Status modification failed");
+    });
+}
+
+/* =====================
+   Logout
+===================== */
+document.getElementById("logoutBtn").addEventListener("click", function () {
+    fetch("admin_logout.php")
+        .then(() => {
+            alert("Logged out");
+            window.location = "admin_login.html";
+        });
+});
+
+/* =====================
+   Init
+===================== */
+window.onload = function () {
+    loadHairdressers();
+};
+</script>
+
+</body>
+</html>

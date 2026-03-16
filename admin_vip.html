@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>VIP Statistics</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+<header>
+    <div class="header-inner">
+        <h1>VIP Statistics</h1>
+        <nav>
+            <ul>
+                <li><a href="admin_home.html">Home</a></li>
+                <li><a href="#" id="logoutBtn">Logout</a></li>
+            </ul>
+        </nav>
+    </div>
+</header>
+
+<div class="container">
+    <h2>Customer Spending Overview</h2>
+
+    <table>
+        <thead>
+            <tr>
+                <th>Customer</th>
+                <th>Membership Level</th>
+                <th>Total Spent</th>
+                <th>Payment Count</th>
+            </tr>
+        </thead>
+        <tbody id="vipBody">
+            <!-- Dynamic content -->
+        </tbody>
+    </table>
+</div>
+
+<script>
+function loadVipStats() {
+    fetch("admin_get_vip_stats.php")
+    .then(res => res.text())
+    .then(text => {
+        console.log("VIP RAW:", text);
+        const data = JSON.parse(text);
+
+        const tbody = document.getElementById("vipBody");
+        tbody.innerHTML = "";
+
+        if (!data.success) {
+            const tr = document.createElement("tr");
+            tr.innerHTML = `<td colspan="4">Failed to load VIP statistics.</td>`;
+            tbody.appendChild(tr);
+            return;
+        }
+
+        if (data.list.length === 0) {
+            const tr = document.createElement("tr");
+            tr.innerHTML = `<td colspan="4"><em>No data available.</em></td>`;
+            tbody.appendChild(tr);
+            return;
+        }
+
+        data.list.forEach(c => {
+            const tr = document.createElement("tr");
+
+            tr.innerHTML = `
+                <td>${c.customerName || c.customerId}</td>
+                <td>${c.membershipLevel}</td>
+                <td>$${c.totalSpent}</td>
+                <td>${c.paymentCount}</td>
+            `;
+
+            tbody.appendChild(tr);
+        });
+    })
+    .catch(err => console.log("VIP JSON ERROR:", err));
+}
+
+// 页面加载
+window.onload = function() {
+    loadVipStats();
+};
+</script>
+
+</body>
+</html>

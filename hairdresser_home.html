@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>Hairdresser Home</title>
+    <link rel="stylesheet" href="styles.css">
+    
+</head>
+<body>
+<header>
+    <div class="header-inner">
+<h1>Hairdresser Panel</h1>
+    <nav>
+        <ul>
+            <li><a href="hairdresser_home.html">Home</a></li>
+            <li><a href="hairdresser_reservations.html">My Reservations</a></li>
+            <li><a href="schedule.html">Time Schedule</a></li>
+            <li><a href="index.html">Logout</a></li>
+        </ul>
+    </nav>
+    </div>
+</header>
+
+<div class="container">
+    <h2>Welcome, Hairdresser H001</h2>
+    <p>
+        After login you can view the reservations assigned to you
+        and check your schedule and performance score.
+    </p>
+</div>
+</body>
+
+<script>
+fetch("session_check.php")
+    .then(res => res.json())
+    .then(data => {
+        if (!data.success) {
+            alert(data.error);  
+            window.location.href = "hairdresser_login.html";
+        }
+    })
+    .catch(err => console.log(err));
+</script>
+
+</html>

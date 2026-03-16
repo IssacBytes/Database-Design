@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>Hairdresser Login</title>
+    <link rel="stylesheet" href="styles.css">
+    
+</head>
+<body>
+<header>
+    <div class="header-inner">
+<h1>Hairdresser Login</h1>
+    <nav>
+        <ul>
+            <li><a href="index.html">Home</a></li>
+            <li><a href="service_guest.html">Service</a></li>
+            <li><a href="hairdressers_guest.html">Hairdressers</a></li>
+            <li><a href="login.html">Reservation</a></li>
+            <li><a href="login.html">Login</a></li>
+            <li><a href="login.html">VIP Info</a></li>
+        </ul>
+    </nav>
+    </div>
+</header>
+
+<div class="container">
+    <label>Hairdresser Name:</label>
+    <input type="text" id="hdId">
+    <label>Password:</label>
+    <input type="password" id="hdPwd">
+    <input type="button" value="Login" onclick="loginHd()">
+</div>
+
+<script>
+    function loginHd() {
+        var id = document.getElementById("hdId").value;
+        var pwd = document.getElementById("hdPwd").value;
+        login_php();
+
+
+        /*if (id === "H001" && pwd === "123456") {
+            alert("Login success!");
+            window.location = "hairdresser_home.html";
+        } else {
+            alert("The information entered is incorrect. Please try again.");
+        }*/
+    }
+
+    function login_php(){
+        var hdId = document.getElementById("hdId").value;
+        var hdPwd = document.getElementById("hdPwd").value;
+        var formData = new FormData();
+        formData.append("hdId", hdId);
+        formData.append("hdPwd", hdPwd);
+
+        fetch("login_hairdresser.php", {
+            method: "POST",
+            body: formData
+        })
+        .then(res => res.text())
+        .then(text =>{
+            console.log(text);
+
+            try{
+                const data = JSON.parse(text);
+
+                if(!data.success){
+                    alert("Login failed: " + data.error);
+                } else {
+                    alert("Login successful!"+" Welcome, " + data.h_name);
+                    window.location.href = data.redirect;
+                }
+            }
+            catch (e){
+                console.error("Error parsing JSON:", e);
+                alert("An error occurred while processing the response.");
+            }
+        })
+    }
+</script>
+</body>
+</html>

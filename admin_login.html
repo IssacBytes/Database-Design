@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>Admin Login</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+<div class="container card-glass" style="max-width: 400px; margin-top: 80px;">
+    <h2>Admin Login</h2>
+
+    <label>Username:</label>
+    <input type="text" id="username">
+
+    <label>Password:</label>
+    <input type="password" id="password">
+
+    <button onclick="login()">Login</button>
+    <p id="msg" style="color:red;"></p>
+</div>
+
+<script>
+function login() {
+    let user = document.getElementById("username").value;
+    let pwd  = document.getElementById("password").value;
+
+    let form = new FormData();
+    form.append("username", user);
+    form.append("password", pwd);
+
+    fetch("admin_login.php", {
+        method: "POST",
+        body: form
+    })
+    .then(res => res.text())
+    .then(text => {
+        console.log("RAW:", text);
+        const data = JSON.parse(text);
+
+        if (!data.success) {
+            document.getElementById("msg").textContent = data.error;
+            return;
+        }
+
+        localStorage.setItem("admin_id", data.admin_id);
+        localStorage.setItem("admin_name", data.admin_name);
+        window.location = "admin_home.html";
+    })
+    .catch(err => console.log(err));
+}
+</script>
+
+</body>
+</html>

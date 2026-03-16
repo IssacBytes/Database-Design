@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>Service</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+<header>
+    <div class="header-inner">
+        <h1>Service</h1>
+        <nav>
+            <ul>
+                <li><a href="index_user.html">Home</a></li>
+                <li><a href="service.html">Service</a></li>
+                <li><a href="hairdressers.html">Hairdressers</a></li>
+                <li><a href="reservation.html">Reservation</a></li>
+                <li><a href="vip.html">VIP Info</a></li>
+                <li><a href="index.html">Logout</a></li>
+            </ul>
+        </nav>
+    </div>
+</header>
+
+<div class="container">
+    <h2>Services</h2>
+
+    <table>
+        <thead>
+            <tr>
+                <th>Service</th>
+                <th>Description</th>
+                <th>Price</th>
+                <th>Make Reservation</th>
+            </tr>
+        </thead>
+        <tbody id="serviceBody">
+            <!-- Dynamic content -->
+        </tbody>
+    </table>
+</div>
+
+<script>
+function loadServices() {
+    fetch("get_services.php")
+    .then(res => res.text())
+    .then(text => {
+        console.log("SERVICE RAW:", text);
+        const data = JSON.parse(text);
+
+        const tbody = document.getElementById("serviceBody");
+        tbody.innerHTML = "";
+
+        if (!data.success) {
+            const tr = document.createElement("tr");
+            tr.innerHTML = `<td colspan="4">Failed to load services.</td>`;
+            tbody.appendChild(tr);
+            return;
+        }
+
+        if (data.services.length === 0) {
+            const tr = document.createElement("tr");
+            tr.innerHTML = `
+                <td colspan="4"><em>No available services at the moment.</em></td>
+            `;
+            tbody.appendChild(tr);
+            return;
+        }
+
+        data.services.forEach(s => {
+            const tr = document.createElement("tr");
+
+            tr.innerHTML = `
+                <td>${s.name}</td>
+                <td>${s.description || "None"}</td>
+                <td>$${s.price}</td>
+                <td>
+                    <button 
+                        onclick="window.location.href='make_reservation.html?serviceId=${s.id}'">
+                        Go
+                    </button>
+                </td>
+            `;
+
+            tbody.appendChild(tr);
+        });
+    })
+    .catch(err => {
+        console.log("SERVICE JSON ERROR:", err);
+    });
+}
+
+// Page loading
+window.onload = function() {
+    loadServices();
+};
+</script>
+
+</body>
+</html>

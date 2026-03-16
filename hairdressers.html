@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>Hairdressers</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+<header>
+    <div class="header-inner">
+        <h1>Hairdressers</h1>
+        <nav>
+            <ul>
+                <li><a href="index_user.html">Home</a></li>
+                <li><a href="service.html">Service</a></li>
+                <li><a href="hairdressers.html">Hairdressers</a></li>
+                <li><a href="reservation.html">Reservation</a></li>
+                <li><a href="vip.html">VIP Info</a></li>
+                <li><a href="index.html">Logout</a></li>
+            </ul>
+        </nav>
+    </div>
+</header>
+
+<div class="container">
+    <h2>Beautician / Hairdresser Info</h2>
+
+    <table>
+        <thead>
+            <tr>
+                <th>ID</th>
+                <th>Name</th>
+                <th>Specialty</th>
+                <th>Rating</th>
+                <th>Make Reservation</th>
+            </tr>
+        </thead>
+        <tbody id="hdBody">
+            <!-- Dynamic content -->
+        </tbody>
+    </table>
+</div>
+
+<script>
+function loadHairdressers() {
+    fetch("get_hairdressers_customer.php")
+    .then(res => res.text())
+    .then(text => {
+        console.log("HD RAW:", text);
+        const data = JSON.parse(text);
+
+        const tbody = document.getElementById("hdBody");
+        tbody.innerHTML = "";
+
+        if (!data.success) {
+            const tr = document.createElement("tr");
+            tr.innerHTML = `<td colspan="5">Failed to load hairdressers.</td>`;
+            tbody.appendChild(tr);
+            return;
+        }
+
+        // Only display active barbers (fallback)
+        const list = data.hairdressers;
+
+        if (list.length === 0) {
+            const tr = document.createElement("tr");
+            tr.innerHTML = `
+                <td colspan="5"><em>No available hairdressers at the moment.</em></td>
+            `;
+            tbody.appendChild(tr);
+            return;
+        }
+
+        list.forEach(h => {
+            const tr = document.createElement("tr");
+
+            tr.innerHTML = `
+                <td>${h.id}</td>
+                <td>${h.name}</td>
+                <td>${h.specialty || "None"}</td>
+                <td>${h.rating ? h.rating : "N/A"}</td>
+                <td>
+                    <button onclick="goMakeReservation('${h.id}')">
+                        Go
+                    </button>
+                </td>
+            `;
+
+            tbody.appendChild(tr);
+        });
+    })
+    .catch(err => console.log("HD JSON ERROR:", err));
+}
+
+function goMakeReservation(hairdresserId) {
+    // Unified redirect to the appointment page, and later the barber can be automatically selected based on the URL
+    window.location.href = "make_reservation.html?hairdresserId=" + hairdresserId;
+}
+
+// Page loading
+window.onload = function() {
+    loadHairdressers();
+};
+</script>
+
+</body>
+</html>

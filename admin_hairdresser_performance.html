@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Hairdresser Rating and Performance</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+<header>
+    <div class="header-inner">
+        <h1>Admin - Hairdresser Performance</h1>
+    </div>
+</header>
+
+<div class="container">
+    <h2>Hairdresser Performance</h2>
+
+    <table>
+        <thead>
+            <tr>
+                <th>Name</th>
+                <th>Reservation Count</th>
+                <th>Total Income</th>
+            </tr>
+        </thead>
+        <tbody id="hairdresserTable">
+            <tr>
+                <td colspan="3" style="text-align:center; color:#777;">
+                    Loading...
+                </td>
+            </tr>
+        </tbody>
+    </table>
+</div>
+
+<script>
+function loadHairdresserPerformance() {
+    fetch("admin_get_hairdresser_performance.php")
+        .then(res => res.text())
+        .then(text => {
+            console.log("PERFORMANCE RAW:", text);
+            const data = JSON.parse(text);
+
+            if (!data.success) {
+                alert(data.error || "Failed to load data");
+                return;
+            }
+
+            renderTable(data.list);
+        })
+        .catch(err => console.log("JSON ERROR:", err));
+}
+
+function renderTable(list) {
+    const tbody = document.getElementById("hairdresserTable");
+    tbody.innerHTML = "";
+
+    if (!list || list.length === 0) {
+        tbody.innerHTML =
+            '<tr><td colspan="3" style="text-align:center;">No data</td></tr>';
+        return;
+    }
+
+    list.forEach(item => {
+        const tr = document.createElement("tr");
+        tr.innerHTML = `
+            <td>${item.name}</td>
+            <td>${item.reservationCount}</td>
+            <td>${Number(item.totalIncome).toFixed(2)}</td>
+        `;
+        tbody.appendChild(tr);
+    });
+}
+
+window.onload = function () {
+    loadHairdresserPerformance();
+};
+</script>
+
+</body>
+</html>

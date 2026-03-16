@@ -1,0 +1,225 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>Beauty Salon - Home (Customer)</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+
+<body>
+<header>
+    <div class="header-inner">
+        <h1>Beauty Salon - Customer Home</h1>
+        <nav>
+            <ul>
+                <li><a href="index_user.html">Home</a></li>
+                <li><a href="service.html">Service</a></li>
+                <li><a href="hairdressers.html">Hairdressers</a></li>
+                <li><a href="reservation.html">Reservation</a></li>
+                <li><a href="vip.html">VIP Info</a></li>
+                <li><a href="index.html">Logout</a></li>
+            </ul>
+        </nav>
+    </div>
+</header>
+
+<div class="container">
+
+    <!-- Latest reservation -->
+    <div class="info-card">
+        <h3>Latest Reservation</h3>
+        <p id="lastResText">Loading...</p>
+    </div>
+
+    <!-- Finished reservations -->
+    <div class="info-card">
+        <h3>Recent Finished Reservations</h3>
+
+        <table class="order-table" style="width:100%; border-collapse:collapse;">
+            <thead>
+                <tr>
+                    <th>Service</th>
+                    <th>Hairdresser</th>
+                    <th>Time</th>
+                    <th>Amount</th>
+                    <th>Status</th>
+                    <th>Payment</th>
+                    <th>Rating</th>
+                </tr>
+            </thead>
+            <tbody id="finishedBody">
+                <tr>
+                    <td colspan="7" style="text-align:center;color:#777;">
+                        Loading...
+                    </td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+
+</div>
+
+<script>
+// ========================
+// Load Home Overview
+// ========================
+function loadHomeOverview() {
+    fetch("reservation_list.php")
+        .then(res => res.text())
+        .then(text => {
+            console.log("HOME RAW:", text);
+            const data = JSON.parse(text);
+
+            if (!data.success) {
+                document.getElementById("lastResText").textContent =
+                    "Failed to load reservation overview.";
+                return;
+            }
+
+            fillLastReservation(data.last);
+            fillFinishedReservations(data.finished);
+        })
+        .catch(err => {
+            console.log("HOME JSON ERROR:", err);
+            document.getElementById("lastResText").textContent =
+                "Error when loading reservation overview.";
+        });
+}
+
+// ========================
+// Latest reservation
+// ========================
+function fillLastReservation(last) {
+    const p = document.getElementById("lastResText");
+
+    if (!last) {
+        p.textContent = "You have no reservations yet.";
+        return;
+    }
+
+    p.textContent =
+        (last.serviceName || "Service") +
+        " with " + (last.hdName || "Hairdresser") +
+        " at " + last.timePeriod +
+        " (Status: " + last.status + ")";
+}
+
+// ========================
+// Finished reservations
+// ========================
+function fillFinishedReservations(list) {
+    const tbody = document.getElementById("finishedBody");
+    tbody.innerHTML = "";
+
+    if (!list || list.length === 0) {
+        const tr = document.createElement("tr");
+        tr.innerHTML =
+            '<td colspan="7" style="text-align:center;color:#777;">' +
+            'No finished reservations.' +
+            '</td>';
+        tbody.appendChild(tr);
+        return;
+    }
+
+    list.forEach(r => {
+        const tr = document.createElement("tr");
+
+        const amountText =
+            r.amount !== null ? Number(r.amount).toFixed(2) : "-";
+
+        let paymentHtml = "";
+        let ratingHtml = "";
+
+        if (r.status === "completed") {
+            paymentHtml =
+                `<button onclick="goPayment('${r.id}')">Pay</button>`;
+        }
+
+        if (r.status === "paid") {
+    paymentHtml = "Paid";
+
+    if (r.rated == 1) {
+        ratingHtml = "Rated";
+    } else {
+        ratingHtml = `
+            <select id="rating_${r.id}">
+                <option value="">Select</option>
+                <option value="0">0</option>
+                <option value="1">1</option>
+                <option value="2">2</option>
+                <option value="3">3</option>
+                <option value="4">4</option>
+                <option value="5">5</option>
+            </select>
+            <button onclick="submitRating('${r.id}','${r.hairdresserId}')">
+                Rate
+            </button>
+        `;
+    }
+}
+
+        tr.innerHTML = `
+            <td>${r.serviceName || ""}</td>
+            <td>${r.hdName || ""}</td>
+            <td>${r.timePeriod || ""}</td>
+            <td>${amountText}</td>
+            <td>${r.status}</td>
+            <td>${paymentHtml}</td>
+            <td>${ratingHtml}</td>
+        `;
+
+        tbody.appendChild(tr);
+    });
+}
+
+// ========================
+// Payment
+// ========================
+function goPayment(resId) {
+    window.location = "payment.html?rid=" + resId;
+}
+
+// ========================
+// Rating (select-based)
+// ========================
+function submitRating(resId, hairdresserId) {
+    const sel = document.getElementById("rating_" + resId);
+    const rating = sel.value;
+
+    if (rating === "") {
+        alert("Please select a rating.");
+        return;
+    }
+
+    const form = new FormData();
+    form.append("reservationId", resId);
+    form.append("hairdresserId", hairdresserId);
+    form.append("rating", rating);
+
+    fetch("hairdresser_rate.php", {
+        method: "POST",
+        body: form
+    })
+    .then(res => res.text())
+    .then(text => {
+        console.log("RATE RAW:", text);
+        const data = JSON.parse(text);
+
+        if (data.success) {
+            alert("Thank you for your rating!");
+            location.reload();
+        } else {
+            alert("Rating failed: " + data.error);
+        }
+    })
+    .catch(err => console.log("RATE JSON ERROR:", err));
+}
+
+// ========================
+window.onload = function () {
+    loadHomeOverview();
+};
+</script>
+
+</body>
+</html>

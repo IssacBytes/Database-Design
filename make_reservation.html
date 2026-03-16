@@ -1,0 +1,427 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>Make Reservation</title>
+    <link rel="stylesheet" href="styles.css">
+    
+</head>
+<body>
+<header>
+    <div class="header-inner">
+<h1>Make Reservation (Common)</h1>
+    <nav>
+        <ul>
+            <li><a href="index_user.html">Home</a></li>
+            <li><a href="service.html">Service</a></li>
+            <li><a href="hairdressers.html">Hairdressers</a></li>
+            <li><a href="reservation.html">Reservation</a></li>
+            <li><a href="vip.html">VIP Info</a></li>
+            <li><a href="index.html">Logout</a></li>
+        </ul>
+    </nav>
+    </div>
+</header>
+
+<div class="container">
+    <p>Common customer can only make reservation within 7 days from today.</p>
+    <label>Service:</label>
+    <select id="srv" onchange="filterHairdressers()"></select>
+    <div id="srvInfo"></div>
+
+
+    <label>Hairdresser ID:</label>
+    <select id="hd" onchange="populateTimeOptions()"></select>
+    <div id="hdInfo"></div> 
+
+
+    <label>Date:</label>
+    <select id="rdate" onchange="filterTimeByDate()"></select>
+
+
+
+    <label>Time:</label>
+    <select id="rtime"></select>
+
+    <input type="button" value="Submit" onclick="submit_for_res()">
+</div>
+
+<script>
+    var if_VIP;
+var hdData = [];
+var serviceData = [];
+
+// weekday → JS getDay() 
+const weekdayMap = {
+    "Sunday": 0,
+    "Monday": 1,
+    "Tuesday": 2,
+    "Wednesday": 3,
+    "Thursday": 4,
+    "Friday": 5,
+    "Saturday": 6
+};
+
+function submit_for_res() {
+    console.log("Submitting reservation...");
+
+    const serviceId     = document.getElementById("srv").value;
+    const hairdresserId = document.getElementById("hd").value;
+    const date          = document.getElementById("rdate").value;
+    const time          = document.getElementById("rtime").value;
+
+    const timePeriod = date + " " + time; 
+
+    fetch("make_reservation.php", {
+        method: "POST",
+        headers: { "Content-Type": "application/x-www-form-urlencoded" },
+        body: new URLSearchParams({
+            serviceId: serviceId,
+            hairdresserId: hairdresserId,
+            timePeriod: timePeriod   
+        })
+    })
+    .then(res => res.text())
+    .then(text => {
+        console.log("RAW RESERVATION RESPONSE:", text);
+        const data = JSON.parse(text);
+
+        if (!data.success) {
+            alert("Reservation failed: " + data.error);
+            return;
+        }
+
+        alert("Reservation successful! ID = " + data.reservationId);
+        window.location = "reservation.html";
+    })
+    .catch(err => console.log("JSON ERROR:", err));
+}
+
+
+
+
+
+
+function check_level(){
+    return fetch("check_level.php")
+    .then(res => res.text())
+    .then(text => {
+        console.log("RAW RESPONSE:", text);
+        const data = JSON.parse(text);
+        console.log("Parsed JSON:", data);
+
+        if(!data.success){
+            alert("No information! Please log in again.");
+            window.location = "login.html";
+        } else {
+            if_VIP = (data.type === "VIP");
+        }
+        return data.level;
+    });
+}
+
+function loadHairdressers() {
+    fetch("get_hairdressers_full.php")
+    .then(res => res.text())
+    .then(text => {
+        console.log("RAW RESPONSE:", text);
+        const data = JSON.parse(text);
+
+        if (!data.success) {
+            alert("Load hairdressers failed!");
+            return;
+        }
+
+        hdData = data.hairdressers;
+
+        const hdSel = document.getElementById("hd");
+        hdSel.innerHTML = "";
+
+        hdData.forEach(hd => {
+            const opt = document.createElement("option");
+            opt.value = hd.id;
+            opt.textContent = hd.name + " (ID: " + hd.id + ")";
+            hdSel.appendChild(opt);
+        });
+
+        populateHairdresserInfo();
+        populateTimeOptions();
+    })
+    .catch(err => console.log("JSON Error:", err));
+}
+
+function populateHairdresserInfo() {
+    const hdSel = document.getElementById("hd");
+    const id = hdSel.value;
+    const hd = hdData.find(h => h.id === id);
+
+    let infoHTML = `
+        <strong>Name:</strong> ${hd.name}<br>
+        <strong>Specialty:</strong> ${hd.specialty || "None"}<br>
+        <strong>Rating:</strong> ${hd.rating || "N/A"}<br>
+        <strong>Schedule:</strong><br>
+    `;
+
+    hd.schedule.forEach(s => {
+        infoHTML += `${s.weekday}: ${s.work_time}<br>`;
+    });
+
+    document.getElementById("hdInfo").innerHTML = infoHTML;
+}
+
+function populateTimeOptions() {
+    populateHairdresserInfo();
+
+    const hdSel = document.getElementById("hd");
+    const id = hdSel.value;
+
+    const hd = hdData.find(h => h.id === id);
+    const timeSel = document.getElementById("rtime");
+    timeSel.innerHTML = "";
+
+    hd.schedule.forEach(s => {
+        const opt = document.createElement("option");
+        opt.value = s.work_time;
+        opt.textContent = `${s.weekday} - ${s.work_time}`;
+        timeSel.appendChild(opt);
+    });
+
+    populateDateOptions();
+    filterTimeByDate();  // ★ New patch: Ensure that the date and time are linked
+}
+
+function populateDateOptions() {
+    const hdSel = document.getElementById("hd");
+    const id = hdSel.value;
+    const hd = hdData.find(h => h.id === id);
+    const dateSel = document.getElementById("rdate");
+    dateSel.innerHTML = "";
+
+    if (!hd) return;
+
+    const allowedWeekdays = [];
+    hd.schedule.forEach(s => {
+        if (!allowedWeekdays.includes(s.weekday)) {
+            allowedWeekdays.push(s.weekday);
+        }
+    });
+
+    let rangeDays = if_VIP ? 15 : 7;
+
+    const today = new Date();
+
+    for (let i = 0; i < rangeDays; i++) {
+        const d = new Date();
+        d.setDate(today.getDate() + i);
+
+        const weekday = d.toLocaleDateString("en-US", { weekday: "long" });
+
+        if (allowedWeekdays.includes(weekday)) {
+            const dateStr = d.toISOString().split("T")[0];
+            const opt = document.createElement("option");
+            opt.value = dateStr;
+            opt.textContent = `${weekday} (${dateStr})`;
+            dateSel.appendChild(opt);
+        }
+    }
+
+    if (dateSel.options.length === 0) {
+        const opt = document.createElement("option");
+        opt.textContent = "No available dates";
+        dateSel.appendChild(opt);
+    }
+}
+
+function filterTimeByDate() {
+    const dateStr = document.getElementById("rdate").value;
+    const hdId = document.getElementById("hd").value;
+
+    if (!dateStr || !hdId) return;
+
+    const hd = hdData.find(h => h.id === hdId);
+    const pickedDate = new Date(dateStr);
+    const pickedWeekday = pickedDate.getDay();
+
+    const timeSel = document.getElementById("rtime");
+    timeSel.innerHTML = "";
+
+    const available = hd.schedule.filter(s => weekdayMap[s.weekday] === pickedWeekday);
+
+    if (available.length === 0) {
+        const opt = document.createElement("option");
+        opt.textContent = "No available time on this date";
+        timeSel.appendChild(opt);
+        return;
+    }
+
+    available.forEach(s => {
+        const opt = document.createElement("option");
+        opt.value = s.work_time;
+        opt.textContent = s.work_time;
+        timeSel.appendChild(opt);
+    });
+}
+
+
+function filterHairdressers() {
+    const serviceId = document.getElementById("srv").value;
+
+    fetch("get_hairdressers_by_service.php?serviceId=" + serviceId)
+    .then(res => res.text())
+    .then(text => {
+        console.log("RAW RESPONSE:", text);
+        const data = JSON.parse(text);
+
+        if (!data.success) {
+            alert("Failed to filter hairdressers!");
+            return;
+        }
+
+        hdData = data.hairdressers;
+
+        const hdSel = document.getElementById("hd");
+        hdSel.innerHTML = "";
+
+        if (hdData.length === 0) {
+            const opt = document.createElement("option");
+            opt.textContent = "No hairdresser available";
+            hdSel.appendChild(opt);
+            document.getElementById("hdInfo").innerHTML = "";
+            document.getElementById("rtime").innerHTML = "";
+            return;
+        }
+
+        hdData.forEach(hd => {
+            const opt = document.createElement("option");
+            opt.value = hd.id;
+            opt.textContent = hd.name + " (ID: " + hd.id + ")";
+            hdSel.appendChild(opt);
+        });
+
+        populateHairdresserInfo();
+        populateTimeOptions();
+    })
+    .catch(err => console.log("JSON Error:", err));
+}
+
+function loadServices() {
+    fetch("get_services.php")
+    .then(res => res.text())
+    .then(text => {
+        const data = JSON.parse(text);
+
+        if (!data.success) return;
+
+        serviceData = data.services;
+
+        const srvSel = document.getElementById("srv");
+        srvSel.innerHTML = "";
+
+        data.services.forEach(srv => {
+            const opt = document.createElement("option");
+            opt.value = srv.id;
+            opt.textContent = srv.name;
+            srvSel.appendChild(opt);
+        });
+
+        showServiceInfo();
+
+        filterHairdressers();
+    });
+}
+
+
+function showServiceInfo() {
+    if (serviceData.length === 0) {
+        document.getElementById("srvInfo").innerHTML =
+            "<em>No available services at the moment.</em>";
+        return;
+    }
+
+    const id = document.getElementById("srv").value;
+    const srv = serviceData.find(s => s.id === id);
+
+    if (!srv) {
+        document.getElementById("srvInfo").innerHTML = "";
+        return;
+    }
+
+    const html = `
+        <strong>Service:</strong> ${srv.name}<br>
+        <strong>Description:</strong> ${srv.description || "None"}<br>
+        <strong>Price:</strong> ${srv.price}<br>
+        <strong>Duration:</strong> ${srv.duration} mins<br>
+    `;
+
+    document.getElementById("srvInfo").innerHTML = html;
+}
+
+
+// Page loading execution
+window.onload = function() {
+    loadServices();
+};
+
+
+
+
+
+
+
+
+
+    /*function submitCommon() {
+        var dateStr = document.getElementById("rdate").value;
+        var timeStr = document.getElementById("rtime").value;
+        if (dateStr === "" || timeStr === "") {
+            alert("Please choose date and time.");
+            return;
+        }
+        var today = new Date();
+        var rDate = new Date(dateStr);
+        var diff = (rDate - today) / (1000 * 60 * 60 * 24);
+        if (diff > 7) {
+            alert("Common customer can only book within 7 days.");
+            return;
+        }
+        alert("Reservation data sent to server (demo).");
+        window.location = "payment.html";
+    }
+
+    var scheduleMap = {
+        "H001": ["10:00","11:00","12:00","13:00","14:00","15:00","16:00","17:00"],
+        "H002": ["09:00","10:00","11:00","12:00","13:00","14:00"],
+        "H003": ["13:00","14:00","15:00","16:00","17:00","18:00"]
+    };
+    function populateTimeOptions() {
+        var hdSel = document.getElementById("hd");
+        var timeSel = document.getElementById("rtime");
+        if (!hdSel || !timeSel) return;
+        var hd = hdSel.value;
+        var times = scheduleMap[hd] || [];
+        timeSel.innerHTML = "";
+        times.forEach(function(t) {
+            var opt = document.createElement("option");
+            opt.value = t;
+            opt.textContent = t;
+            timeSel.appendChild(opt);
+        });
+    }
+    function initDateLimitCommon() {
+        var input = document.getElementById("rdate");
+        if (!input) return;
+        var today = new Date();
+        var min = today.toISOString().split("T")[0];
+        var maxDate = new Date(today.getTime() + 7 * 24 * 60 * 60 * 1000);
+        var max = maxDate.toISOString().split("T")[0];
+        input.setAttribute("min", min);
+        input.setAttribute("max", max);
+    }
+    window.onload = function() {
+        initDateLimitCommon();
+        populateTimeOptions();
+    };*/
+
+</script>
+</body>
+</html>

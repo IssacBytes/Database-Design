@@ -1,0 +1,211 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>Customer Login / Register</title>
+    <link rel="stylesheet" href="styles.css">
+    
+</head>
+<body>
+<header>
+    <div class="header-inner">
+<h1>Customer Login / Register</h1>
+    <nav>
+        <ul>
+            <li><a href="index.html">Home</a></li>
+            <li><a href="service_guest.html">Service</a></li>
+            <li><a href="hairdressers_guest.html">Hairdressers</a></li>
+            <li><a href="login.html">Reservation</a></li>
+            <li><a href="login.html">Login</a></li>
+            <li><a href="login.html">VIP Info</a></li>
+        </ul>
+    </nav>
+    </div>
+</header>
+
+<div class="container">
+    <div class="flex">
+        <div class="box">
+            <h2>Customer Login</h2>
+            <p>Demo account: username <strong>user1</strong>, password <strong>123456</strong>.</p>
+            <label>Username:</label>
+            <input type="text" id="loginName">
+            <label>Password:</label>
+            <input type="password" id="loginPwd">
+            <input type="submit" value="Login" onclick="loginCustomer()">
+        </div>
+
+        <div class="box">
+            <h2>Customer Register</h2>
+            <label>Name:</label>
+            <input type="text" id="regName">
+            <label>Email:</label>
+            <input type="text" id="regEmail">
+            <p id="result"></p>
+            <label>Phone:</label>
+            <input type="text" id="regPhone">
+            <label>Password:</label>
+            <input type="password" id="regPwd">
+            <label>Check your password:</label>
+            <input type="password" id="regPwdCheck">
+            <p id="msg_for_php_result"></p>
+            <!--<label>Membership Type:</label>-->
+            <!--<select id="regType">
+                <option value="Common">Common</option>
+                <option value="VIP">VIP</option>
+            </select>-->
+            <input type="submit" value="Register" onclick="registerCustomer()">
+        </div>
+    </div>
+    <p id="msg"></p>
+
+</div>
+
+<script>
+    function loginCustomer() {
+        var name = document.getElementById("loginName").value;
+        var pwd = document.getElementById("loginPwd").value;
+
+        check_php_login();
+        /*if (name === "user1" && pwd === "123456") {
+            alert("Login success!");
+            // After successful login, you will enter the "Logged-in Homepage"
+            window.location = "index_user.html";
+        } else {
+            alert("The information entered is incorrect. Please try again.");
+        }*/
+    }
+
+    function check_php_login(){
+        var name = document.getElementById("loginName").value;
+        var pwd = document.getElementById("loginPwd").value;
+
+        var formData = new FormData();
+        formData.append("loginName", name);
+        formData.append("loginPwd", pwd);
+
+        fetch("login.php", {
+            method: "POST",
+            body: formData
+        })
+        .then(res => res.text())
+        .then(text =>{
+            console.log("RAW RESPONSE:",text);
+
+            try{
+                const data = JSON.parse(text);
+                console.log("Parsed JSON:", data);
+
+                if (!data.success){
+                    alert("Login failed: " + data.error);
+                } else {
+                    alert("Login successful!"+" Welcome, " + data.c_name);
+                    window.location = "index_user.html";
+                }
+            } catch(e){
+                alert("JSON Parse Error: " + e);
+            }
+        })
+    }
+
+    function registerCustomer() {
+        var name = document.getElementById("regName").value;
+        var email = document.getElementById("regEmail").value;
+        var phone = document.getElementById("regPhone").value;
+
+        if (!checkEmail(email)) return;
+
+        if (!checkPhoneNumber(phone)) return;
+
+
+        if (name === "" || email === "") {
+            alert("Name and email are required.");
+        } else {
+            /*alert("Register information has been sent to server (demo).");
+            document.getElementById("msg").innerHTML =
+                "Customer registered (demo). You can login now.";*/
+            check_php_Register();
+        }
+    }
+    function checkEmail(email) {
+        const pattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+        if (!pattern.test(email)) {
+        alert("Email format invalid.");
+        return false;
+        }
+
+        alert("Email format OK!");
+        return true;
+    }
+
+    function checkPhoneNumber(phone){
+        const phonePattern = /^\d{11}$/;
+
+        if (!phonePattern.test(phone)) {
+        alert("Phone number format invalid.");
+        return false;
+        }
+
+        alert("Phone number format OK!");
+        return true;
+    }
+
+
+    function check_php_Register() {
+    var name  = document.getElementById("regName").value;
+    var pwd   = document.getElementById("regPwd").value;
+    var email = document.getElementById("regEmail").value;
+    var phone = document.getElementById("regPhone").value;
+
+    var formData = new FormData();
+    formData.append("regName", name);
+    formData.append("regPwd", pwd);
+    formData.append("regEmail", email);
+    formData.append("regPhone", phone);
+
+    fetch("register.php", {
+    method: "POST",
+    body: formData
+    })
+    .then(res => res.text())
+    .then(text => {
+    console.log("RAW RESPONSE:", text);
+
+    try {
+        const data = JSON.parse(text);
+        console.log("Parsed JSON:", data);
+
+        if (!data.success) {
+            alert("Registration failed: " + data.error);
+        } else {
+            alert("Registration successful!");
+        }
+    } catch(e) {
+        alert("JSON Parse Error: " + e);
+    }
+    });
+
+
+    /*fetch("register.php", {
+        method: "POST",
+        body: formData
+    })
+    .then(res => res.json())
+    .then(data => {
+        console.log("The return value : ", data);
+        if (!data.success) {
+            alert("Registration failed: " + data.error);
+        } else {
+            alert("Registration successful!");
+        }
+    })
+    .catch(err => {
+        alert("Fetch error: " + err);
+    });*/
+
+}
+
+</script>
+</body>
+</html>

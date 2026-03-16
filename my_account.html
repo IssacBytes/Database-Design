@@ -1,0 +1,261 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>My Account</title>
+    <link rel="stylesheet" href="styles.css">
+    <style>
+        .account-container { max-width: 1000px; margin: 20px auto; }
+        .section { margin-bottom: 30px; }
+        .section h3 { border-bottom: 2px solid #ddd; padding-bottom: 10px; margin-bottom: 15px; }
+        .order-table { width: 100%; border-collapse: collapse; margin-top: 15px; }
+        .order-table th, .order-table td { padding: 12px; border: 1px solid #ddd; text-align: left; }
+        .order-table th { background-color: #f5f5f5; font-weight: bold; }
+        .order-table tr:hover { background-color: #f9f9f9; }
+        .status-paid { color: #28a745; font-weight: bold; }
+        .status-unpaid { color: #dc3545; font-weight: bold; }
+        .status-pending { color: #ffc107; font-weight: bold; }
+        .info-card { background: #f0f0f0; padding: 15px; border-radius: 6px; margin-bottom: 15px; }
+        .info-card p { margin: 8px 0; }
+        .info-card strong { color: #333; }
+    </style>
+</head>
+<body>
+<header>
+    <div class="header-inner">
+        <h1>My Account</h1>
+        <nav>
+            <ul>
+                <li><a href="index_user.html">Home</a></li>
+                <li><a href="service.html">Service</a></li>
+                <li><a href="hairdressers.html">Hairdressers</a></li>
+                <li><a href="reservation.html">Reservation</a></li>
+                <li><a href="my_account.html">My Account</a></li>
+                <li><a href="vip.html">VIP Info</a></li>
+                <li><a href="index.html">Logout</a></li>
+            </ul>
+        </nav>
+    </div>
+</header>
+
+<div class="container account-container card-glass">
+    
+    <div class="section">
+        <h3>👤 User Information</h3>
+        <div class="info-card">
+            <p><strong>Name:</strong> <span id="userName">-</span></p>
+            <p><strong>email:</strong> <span id="userEmail">-</span></p>
+            <p><strong>telephone:</strong> <span id="userPhone">-</span></p>
+            <p><strong>User type:</strong> <span id="userType">Common</span></p>
+        </div>
+    </div>
+
+    <div class="section">
+        <h3>💳 VIP information</h3>
+        <div class="info-card">
+            <p><strong>Membership Level:</strong> <span id="memberLevel">Bronze</span></p>
+            <p><strong>Cumulative consumption:</strong> <span id="totalSpent">0.00</span> 元</p>
+            <p><strong>Prepaid balance:</strong> <span id="prepaidBalance">0.00</span> 元</p>
+            <p><strong>Current discount:</strong> <span id="vipDiscount">无折扣</span></p>
+        </div>
+    </div>
+
+    <div class="section">
+        <h3>✅ Completed orders (pending payment + paid)</h3>
+        <p style="color: #666; margin-bottom: 15px;">
+            Total <span id="totalOrders">0</span> completed orders, among which 
+            <span style="color: #dc3545;"><span id="unpaidCount">0</span> One unpaid</span>，
+            <span style="color: #28a745;"><span id="paidCount">0</span> One has been paid</span>
+        </p>
+        
+        <table class="order-table" id="ordersTable">
+            <thead>
+                <tr>
+                    <th>Order ID</th>
+                    <th>service</th>
+                    <th>hairdresser</th>
+                    <th>time</th>
+                    <th>amount</th>
+                    <th>status</th>
+                    <th>operation</th>
+                </tr>
+            </thead>
+            <tbody id="ordersBody">
+                <tr><td colspan="7" style="text-align: center; color: #999;">加载中...</td></tr>
+            </tbody>
+        </table>
+    </div>
+
+    <div class="section">
+        <h3>📋 Pending appointment</h3>
+        <table class="order-table" id="pendingTable">
+            <thead>
+                <tr>
+                    <th>Reservation ID</th>
+                    <th>service</th>
+                    <th>hairdresser</th>
+                    <th>Appointment time</th>
+                    <th>status</th>
+                </tr>
+            </thead>
+            <tbody id="pendingBody">
+                <tr><td colspan="5" style="text-align: center; color: #999;">No pending appointments</td></tr>
+            </tbody>
+        </table>
+    </div>
+
+</div>
+
+<script>
+    // Service price mapping
+    const serviceMap = {
+        'svc-01': { name: 'Massage', price: 50 },
+        'svc-02': { name: 'Haircut', price: 40 },
+        'svc-03': { name: 'Hair Color', price: 80 },
+        'svc-10': { name: 'Massage', price: 50 },
+        'svc-11': { name: 'Haircut', price: 40 },
+        'svc-12': { name: 'Hair Color', price: 80 }
+    };
+
+    // Hairdresser mapping
+    const hairdresserMap = {
+        'H001': 'Amy',
+        'H002': 'Ben',
+        'H003': 'Cindy',
+        'H999': 'Admin'
+    };
+
+    function getVipLevel(total) {
+        var level = Math.floor(total / 1000);
+        if (level > 5) level = 5;
+        if (level < 0) level = 0;
+        return level;
+    }
+
+    function getLevelName(level) {
+        const names = ['Bronze', 'Silver', 'Gold', 'Platinum', 'Platinum', 'Platinum'];
+        return names[level] || 'Bronze';
+    }
+
+    function getDiscountFactor(level) {
+        return 1 - 0.05 * level;
+    }
+
+    async function loadUserInfo() {
+        const stored = localStorage.getItem('user');
+        if (stored) {
+            const user = JSON.parse(stored);
+            document.getElementById('userName').textContent = user.name || '-';
+            document.getElementById('userEmail').textContent = user.email || '-';
+            document.getElementById('userPhone').textContent = user.phone || '-';
+            document.getElementById('userType').textContent = user.type || 'Common';
+
+            // Try to load VIP info from backend
+            if (user.type === 'VIP' && localStorage.getItem('token')) {
+                try {
+                    const res = await fetch('http://localhost:4000/api/vip/' + user.id, {
+                        headers: { Authorization: 'Bearer ' + localStorage.getItem('token') }
+                    });
+                    if (res.ok) {
+                        const data = await res.json();
+                        const vip = data.vip;
+                        const totalSpent = Number(vip.prepaidBalance || 0);
+                        const level = getVipLevel(totalSpent);
+                        document.getElementById('memberLevel').textContent = getLevelName(level);
+                        document.getElementById('totalSpent').textContent = totalSpent.toFixed(2);
+                        document.getElementById('prepaidBalance').textContent = totalSpent.toFixed(2);
+                        const factor = getDiscountFactor(level);
+                        document.getElementById('vipDiscount').textContent = level === 0 ? '无折扣' : (factor * 10).toFixed(1) + ' 折';
+                        return;
+                    }
+                } catch (err) {
+                    console.warn('VIP fetch failed', err);
+                }
+            }
+
+            // Fallback to localStorage
+            const totalSpent = parseFloat(localStorage.getItem('totalSpent') || '0');
+            const level = getVipLevel(totalSpent);
+            document.getElementById('memberLevel').textContent = getLevelName(level);
+            document.getElementById('totalSpent').textContent = totalSpent.toFixed(2);
+            const factor = getDiscountFactor(level);
+            document.getElementById('vipDiscount').textContent = level === 0 ? '无折扣' : (factor * 10).toFixed(1) + ' 折';
+        }
+    }
+
+    async function loadCompletedOrders() {
+        const stored = localStorage.getItem('user');
+        if (!stored || !localStorage.getItem('token')) {
+            document.getElementById('ordersBody').innerHTML = '<tr><td colspan="7" style="text-align: center; color: #999;">请登录查看订单</td></tr>';
+            return;
+        }
+
+        try {
+            const user = JSON.parse(stored);
+            const res = await fetch('http://localhost:4000/api/orders/completed/' + user.id, {
+                headers: { Authorization: 'Bearer ' + localStorage.getItem('token') }
+            });
+
+            if (res.ok) {
+                const data = await res.json();
+                const orders = data.orders || [];
+
+                if (orders.length === 0) {
+                    document.getElementById('ordersBody').innerHTML = '<tr><td colspan="7" style="text-align: center; color: #999;">暂无已完成订单</td></tr>';
+                    return;
+                }
+
+                // Count paid/unpaid
+                const paidOrders = JSON.parse(localStorage.getItem('paidOrders') || '[]');
+                let unpaidCount = 0, paidCount = 0;
+
+                const tbody = document.getElementById('ordersBody');
+                tbody.innerHTML = '';
+
+                orders.forEach(order => {
+                    const serviceName = serviceMap[order.serviceId]?.name || order.serviceId;
+                    const servicePrice = serviceMap[order.serviceId]?.price || order.amount || 0;
+                    const isPaid = paidOrders.includes(order.id);
+                    if (isPaid) paidCount++; else unpaidCount++;
+
+                    const row = document.createElement('tr');
+                    const statusClass = isPaid ? 'status-paid' : 'status-unpaid';
+                    const statusText = isPaid ? '已支付' : '未支付';
+                    const actionBtn = isPaid ? '已支付' : '<a href="payment.html" style="color: #007bff;">去支付</a>';
+
+                    row.innerHTML = `
+                        <td>${order.id}</td>
+                        <td>${serviceName}</td>
+                        <td>${hairdresserMap[order.hairdresserId] || order.hairdresserId}</td>
+                        <td>${order.timePeriod || '-'}</td>
+                        <td>${Number(servicePrice).toFixed(2)} 元</td>
+                        <td class="${statusClass}">${statusText}</td>
+                        <td>${actionBtn}</td>
+                    `;
+                    tbody.appendChild(row);
+                });
+
+                document.getElementById('totalOrders').textContent = orders.length;
+                document.getElementById('unpaidCount').textContent = unpaidCount;
+                document.getElementById('paidCount').textContent = paidCount;
+            }
+        } catch (err) {
+            console.error('Error loading orders:', err);
+            document.getElementById('ordersBody').innerHTML = '<tr><td colspan="7" style="text-align: center; color: #999;">加载失败</td></tr>';
+        }
+    }
+
+    async function loadPendingReservations() {
+        // For now, show empty state - can be enhanced later with backend API
+        const tbody = document.getElementById('pendingBody');
+        tbody.innerHTML = '<tr><td colspan="5" style="text-align: center; color: #999;">暂无待完成预约</td></tr>';
+    }
+
+    window.onload = function() {
+        loadUserInfo();
+        loadCompletedOrders();
+        loadPendingReservations();
+    };
+</script>
+</body>
+</html>

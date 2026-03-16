@@ -1,0 +1,214 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>Payment</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+<header>
+    <div class="header-inner">
+        <h1>Payment</h1>
+        <nav>
+            <ul>
+                <li><a href="index_user.html">Home</a></li>
+                <li><a href="service.html">Service</a></li>
+                <li><a href="hairdressers.html">Hairdressers</a></li>
+                <li><a href="reservation.html">Reservation</a></li>
+                <li><a href="vip.html">VIP Info</a></li>
+                <li><a href="index.html">Logout</a></li>
+            </ul>
+        </nav>
+    </div>
+</header>
+
+<div class="container">
+    <h2>Pay for Your Reservation</h2>
+
+    <p class="note">
+        The system will automatically calculate your VIP level based on your accumulated consumption amount and display it on this page.<strong>automatically apply discounts</strong>。
+    </p>
+
+    <!-- VIP summary -->
+    <div class="summary-card">
+        <p><strong>Total Spent:</strong> <span id="totalSpent">Loading...</span></p>
+        <p><strong>VIP Level:</strong> <span id="vipLevel">Loading...</span></p>
+        <p><strong>Discount:</strong> <span id="vipDiscount">Loading...</span></p>
+    </div>
+
+    <h3>Reservation Summary</h3>
+
+    <p><strong>Service:</strong> <span id="serviceName">Loading...</span></p>
+    <p><strong>Hairdresser:</strong> <span id="hdName">Loading...</span></p>
+    <p><strong>Time:</strong> <span id="resDate">Loading...</span></p>
+
+    <label>Reservation ID:</label>
+    <input type="text" id="payId" readonly>
+
+    <label>Original Amount:</label>
+    <input type="text" id="amount" readonly>
+
+    <p>
+        <strong>Amount After Discount:</strong>
+        <span id="discountedAmount">Loading...</span>
+    </p>
+
+    <!-- hidden final amount -->
+    <input type="hidden" id="finalAmount">
+
+    <label>Payment Method:</label>
+    <select id="method">
+        <option value="cash">Cash</option>
+        <option value="card">Card</option>
+        <option value="qr">QR Code</option>
+    </select>
+
+    <label>Rate This Reservation:</label>
+    <select id="score">
+        <option value="5">5 - Excellent</option>
+        <option value="4">4 - Good</option>
+        <option value="3">3 - Average</option>
+        <option value="2">2 - Poor</option>
+        <option value="1">1 - Very Bad</option>
+    </select>
+
+    <br><br>
+    <button onclick="pay()">Confirm Payment</button>
+
+    <p id="payMsg"></p>
+</div>
+
+<script>
+let vipDiscountPercent = 0;
+
+/* ======================
+   Load VIP Info
+====================== */
+function loadVIPInfo() {
+    fetch("check_level.php")
+        .then(res => res.text())
+        .then(text => {
+            console.log("VIP RAW:", text);
+            const data = JSON.parse(text);
+
+            if (!data.success) return;
+
+            document.getElementById("totalSpent").textContent = data.totalSpent;
+            document.getElementById("vipLevel").textContent = data.level;
+
+            vipDiscountPercent = data.level * 5;
+
+            document.getElementById("vipDiscount").textContent =
+                vipDiscountPercent > 0
+                    ? vipDiscountPercent + "% off"
+                    : "No discount";
+
+            applyDiscount();
+        });
+}
+
+/* ======================
+   Load Reservation
+====================== */
+function loadReservationInfo(rid) {
+    fetch("reservation_detail.php?rid=" + rid)
+        .then(res => res.text())
+        .then(text => {
+            console.log("DETAIL RAW:", text);
+            const data = JSON.parse(text);
+
+            if (!data.success) {
+                alert("Reservation not found");
+                return;
+            }
+
+            document.getElementById("payId").value = data.id;
+            document.getElementById("amount").value = data.basePrice;
+
+            document.getElementById("serviceName").textContent = data.serviceName;
+            document.getElementById("hdName").textContent = data.hdName;
+            document.getElementById("resDate").textContent = data.timePeriod;
+
+            applyDiscount();
+        });
+}
+
+/* ======================
+   Apply Discount
+====================== */
+function applyDiscount() {
+    const base = parseFloat(document.getElementById("amount").value);
+    if (isNaN(base)) return;
+
+    const finalAmount = base * (1 - vipDiscountPercent / 100);
+
+    document.getElementById("discountedAmount").textContent =
+        finalAmount.toFixed(2);
+
+    document.getElementById("finalAmount").value =
+        finalAmount.toFixed(2);
+}
+
+/* ======================
+   Pay
+====================== */
+function pay() {
+    const orderId = document.getElementById("payId").value;
+    const amount  = document.getElementById("finalAmount").value;
+    const method  = document.getElementById("method").value;
+    const score   = document.getElementById("score").value;
+
+    if (!orderId || !amount || !method) {
+        alert("Missing payment information");
+        return;
+    }
+
+    const form = new FormData();
+    form.append("orderId", orderId);
+    form.append("amount", amount);
+    form.append("method", method);
+    form.append("score", score);
+
+    fetch("payment_make.php", {
+        method: "POST",
+        body: form
+    })
+    .then(res => res.text())
+    .then(text => {
+        console.log("PAY RAW:", text);
+        const data = JSON.parse(text);
+
+        if (!data.success) {
+            alert("Payment failed: " + data.error);
+            return;
+        }
+
+        alert("Payment successful!");
+        window.location = "reservation.html";
+    })
+    .catch(err => {
+        console.log("PAY ERROR:", err);
+        alert("Payment error");
+    });
+}
+
+/* ======================
+   Init
+====================== */
+window.onload = function () {
+    const params = new URLSearchParams(window.location.search);
+    const rid = params.get("rid");
+
+    if (!rid) {
+        alert("Missing reservation ID");
+        return;
+    }
+
+    loadVIPInfo();
+    loadReservationInfo(rid);
+};
+</script>
+
+</body>
+</html>

@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>My Reservation</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+<header>
+    <div class="header-inner">
+        <h1>My Reservation</h1>
+        <nav>
+            <ul>
+                <li><a href="index_user.html">Home</a></li>
+                <li><a href="service.html">Service</a></li>
+                <li><a href="hairdressers.html">Hairdressers</a></li>
+                <li><a href="reservation.html">Reservation</a></li>
+                <li><a href="vip.html">VIP Info</a></li>
+                <li><a href="index.html">Logout</a></li>
+            </ul>
+        </nav>
+    </div>
+</header>
+
+
+<div class="container">
+
+    <!-- Unfinished appointment -->
+    <h2>Unfinished Reservations</h2>
+<table id="unfinishedTable">
+    <tr>
+        <th>Reservation ID</th>
+        <th>Service</th>
+        <th>Hairdresser</th>
+        <th>Date</th>
+        <th>Status</th>
+        <th>Action</th> 
+    </tr>
+</table>
+
+
+
+
+    <!-- Appointment completed -->
+    <h2>Finished Reservations (Go to Payment)</h2>
+    <table>
+        <tr>
+            <th>Reservation ID</th>
+            <th>Service</th>
+            <th>Hairdresser</th>
+            <th>Date</th>
+            <th>Action</th>
+        </tr>
+
+        <!-- Dynamically insert completed records -->
+        <tbody id="finishedBody"></tbody>
+    </table>
+
+    <p class="note">Please proceed to payment page for completed reservations.</p>
+    <div style="margin-top: 30px; text-align: center;">
+        <button 
+        onclick="window.location.href='make_reservation.html';"
+        style="padding: 10px 20px; font-size: 16px;"
+        >
+        Make a New Reservation
+    </button>
+    </div>
+
+
+</div>
+<script>
+    function cancelReservation(resId) {
+    if (!confirm("Are you sure you want to cancel this reservation?")) return;
+    let form = new FormData();
+    form.append("id", resId);
+
+    fetch("reservation_cancel.php", {
+        method: "POST",
+        body: form
+    })
+    .then(res => res.text())
+    .then(text => {
+        console.log("CANCEL RAW:", text);
+        const data = JSON.parse(text);
+
+        if (data.success) {
+            alert("Reservation canceled.");
+            location.reload();
+        } else {
+            alert("Cancel failed: " + data.error);
+        }
+    })
+    .catch(err => console.log("JSON Error:", err));
+}
+
+    function loadReservations() {
+    fetch("reservation_load.php")
+    .then(res => res.text())
+    .then(text => {
+            console.log("LOAD RAW:", text);
+        const data = JSON.parse(text);
+        if (!data.success) {
+            alert("Failed to load your reservations.");
+            return;
+        }
+
+        // Load each section
+        fillUnfinished(data.unfinished);
+        fillFinished(data.finished);
+    })
+    .catch(err => console.log("LOAD JSON ERROR:", err));
+}
+
+    function fillUnfinished(list) {
+    const table = document.getElementById("unfinishedTable");
+
+    // Remove old rows except header
+    table.innerHTML = `
+        <tr>
+            <th>Reservation ID</th>
+            <th>Service</th>
+            <th>Hairdresser</th>
+            <th>Date</th>
+            <th>Status</th>
+            <th>Action</th>
+        </tr>
+    `;
+
+    list.forEach(r => {
+        const row = table.insertRow();
+
+        row.innerHTML = `
+            <td>${r.id}</td>
+            <td>${r.serviceName}</td>
+            <td>${r.hdName}</td>
+            <td>${r.timePeriod}</td>
+            <td>${r.status}</td>
+            <td>
+                <button onclick="cancelReservation('${r.id}')">Cancel</button>
+            </td>
+        `;
+    });
+}
+
+    function fillFinished(list) {
+    const tbody = document.getElementById("finishedBody");
+    tbody.innerHTML = "";
+
+    list.forEach(r => {
+        const tr = document.createElement("tr");
+
+        tr.innerHTML = `
+            <td>${r.id}</td>
+            <td>${r.serviceName}</td>
+            <td>${r.hdName}</td>
+            <td>${r.timePeriod}</td>
+            <td>
+                <button onclick="goPayment('${r.id}')">Go to Payment</button>
+            </td>
+        `;
+
+        tbody.appendChild(tr);
+    });
+}
+
+    function goPayment(resId) {
+    window.location = "payment.html?rid=" + resId;
+}
+
+    
+
+
+window.onload = function() {
+    loadReservations();
+};
+
+</script>
+</body>
+</html>

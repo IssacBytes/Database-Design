@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>Hairdresser - My Reservations</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+
+<body>
+<header>
+    <div class="header-inner">
+        <h1>My Reservations & Performance</h1>
+        <nav>
+            <ul>
+                <li><a href="hairdresser_home.html">Home</a></li>
+                <li><a href="hairdresser_reservations.html">My Reservations</a></li>
+                <li><a href="schedule.html">Time Schedule</a></li>
+                <li><a href="index.html">Logout</a></li>
+            </ul>
+        </nav>
+    </div>
+</header>
+
+<div class="container">
+
+    <!-- ===== Reservations ===== -->
+    <h2>My Reservations</h2>
+    <table style="width:100%; border-collapse:collapse;">
+        <thead>
+            <tr>
+                <th>Reservation ID</th>
+                <th>Customer</th>
+                <th>Service</th>
+                <th>Time</th>
+                <th>Status</th>
+            </tr>
+        </thead>
+        <tbody id="reservationBody">
+            <tr>
+                <td colspan="5" style="text-align:center;color:#777;">
+                    Loading...
+                </td>
+            </tr>
+        </tbody>
+    </table>
+
+    <br>
+
+    <!-- ===== Rating ===== -->
+    <h2>My Performance</h2>
+    <p>
+        Average Rating:
+        <strong id="ratingText">Loading...</strong>
+    </p>
+
+</div>
+
+<script>
+// ===============================
+// Load reservations
+// ===============================
+function loadReservations() {
+    fetch("hairdresser_get_reservations.php")
+        .then(res => res.text())
+        .then(text => {
+            console.log("HD RES RAW:", text);
+            const data = JSON.parse(text);
+
+            const body = document.getElementById("reservationBody");
+            body.innerHTML = "";
+
+            if (!data.success || data.reservations.length === 0) {
+                body.innerHTML =
+                    "<tr><td colspan='5' style='text-align:center;color:#777;'>No reservations</td></tr>";
+                return;
+            }
+
+            data.reservations.forEach(r => {
+                const tr = document.createElement("tr");
+                tr.innerHTML = `
+                    <td>${r.id}</td>
+                    <td>${r.customerName}</td>
+                    <td>${r.serviceName}</td>
+                    <td>${r.timePeriod}</td>
+                    <td>${r.status}</td>
+                `;
+                body.appendChild(tr);
+            });
+        })
+        .catch(err => {
+            console.log("RES JSON ERROR:", err);
+        });
+}
+
+// ===============================
+// Load rating
+// ===============================
+function loadRating() {
+    fetch("hairdresser_get_rating.php")
+        .then(res => res.text())
+        .then(text => {
+            console.log("HD RATING RAW:", text);
+            const data = JSON.parse(text);
+
+            const ratingEl = document.getElementById("ratingText");
+
+            if (!data.success || data.rating === null) {
+                ratingEl.textContent = "N/A";
+                return;
+            }
+
+            ratingEl.textContent = Number(data.rating).toFixed(2);
+        })
+        .catch(err => {
+            console.log("RATING JSON ERROR:", err);
+        });
+}
+
+// ===============================
+// Init
+// ===============================
+window.onload = function () {
+    loadReservations();
+    loadRating();
+};
+</script>
+
+</body>
+</html>
