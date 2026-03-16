@@ -28,7 +28,7 @@ Among all entities, reservations serve as the core transactional object. Each re
 ## Part 2: Conceptual Design
 *(The graph is submitted individually according to requirement, see the diagram below)*
 
-![ER Diagram](./docs/ER_Diagram.jpg)
+![ER Diagram](./ER Diagram/ER_Diagram.jpg)  
 
 ### 2.1 Initial ER Modeling
 Based on the problem analysis, an initial Entity–Relationship (ER) model was constructed to reflect real-world interactions within the salon.
