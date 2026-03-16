@@ -16,3 +16,5 @@ This is a course project for Database course which requires students to combine 
 - `/hairdresser`: 发型师预约及排班管理
 - `/auth`: 统一权限验证与登录模块
 - `/sql`: 数据库 E-R 图及 SQL 建表脚本
+
+## [查看完整实验报告](./docs/Report.docx)
